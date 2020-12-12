@@ -103,8 +103,8 @@ app.post('/login', validate([
   body('password').isLength({ min: 5 })
 ]), async (req, res, next) => {
   try {
-    let user = await User.findOne({ email: req.body.email }); 
-    if (!user) { return res.status(404).json({ message: "Email not found!"}); }
+    let user = await User.findOne({ where: { email: req.body.email }});
+    if (!user) { return res.status(404).json({ message: "Email not found!"});
     const { hash } = await hasher({ password: req.body.password, salt: user.salt });
     if (hash === user.hash) {
       res.json({
