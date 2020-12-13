@@ -161,6 +161,7 @@ app.get('/todos', authorize, async (req, res, next) => {
 });
 
 app.patch('/todo/:id/update', authorize, async (req, res) => {
+  console.log(req.body);
   const todoId = req.params.id;
   const updateParams = {...req.body };
   const updatedTodo = await Todo.update(updateParams, { where: { id: todoId }});

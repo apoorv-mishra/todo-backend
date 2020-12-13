@@ -25,6 +25,11 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true,
       defaultValue: false
     },
+    deadline: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'deadline'
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: true,
