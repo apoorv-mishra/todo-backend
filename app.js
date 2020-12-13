@@ -153,7 +153,7 @@ app.get('/todos', authorize, async (req, res, next) => {
   const userId = parseInt(req.query.userId);
   try {
     const user = await User.findOne({ where: { id: userId }});
-    const todos = await Todo.findAll({ where: { userId: userId }});
+    const todos = await Todo.findAll({ where: { userId: userId }, order: [ [ 'created_at', 'DESC' ] ] });
     res.json({ message: 'Todos!', user: user, todos: todos });
   } catch(err) {
     next(err);
