@@ -71,8 +71,6 @@ const { User, Todo } = require("./models/init-models")(sequelize);
 /* Routes required */
 // POST /signup (validation)
 // POST /login (validation)
-// POST /logout
-// GET /user/:id (auth)
 // POST /todo/create?userId=<userId> (auth)
 // GET /todos?userId=<userId> (auth)
 // POST /todo/:id/update?userId=<userId> (auth)
