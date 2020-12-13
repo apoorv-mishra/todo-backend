@@ -94,20 +94,21 @@ app.post('/signup',
   generateJWT,
   async (req, res, next) => {
     let user = {...req.body };
+    let newUser;
     try {
       const { hash, salt } = await hasher({ password: req.body.password });
       user.hash = hash;
       user.salt = salt;
-      await User.create(user);
+      newUser = await User.create(user);
     } catch(err) {
       return next(err);
     }
 
     res.json({
       message: "SignUp successful!",
-      token: user.jwt,
-      id: user.id,
-      name: user.firstName + ' ' + user.lastName
+      token: newUser.jwt,
+      id: newUser.id,
+      name: newUser.firstName
     });
   });
 
