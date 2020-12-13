@@ -83,8 +83,8 @@ const { User, Todo } = require("./models/init-models")(sequelize);
 // curl -X GET localhost:8080/logout
 // curl -X GET localhost:8080/user/1
 // curl -X POST -H "Content-Type":"application/json" -H "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFwb29ydm1pc2hyYTEwMTA5MkBnbWFpbC5jb20iLCJpYXQiOjE2MDc4MzY0Nzl9.e0K6kQCMWOt_lzcMEwktR5n_of2h7pvZ-_FZELchJ9A" "localhost:8080/todo/create?userId=32" -d '{"name":"Water"}'
-// curl -X GET -H "Authorization":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFwb29ydm1pc2hyYTEwMTA5MkBnbWFpbC5jb20iLCJpYXQiOjE2MDc4MzY0Nzl9.e0K6kQCMWOt_lzcMEwktR5n_of2h7pvZ-_FZELchJ9A" "localhost:8080/todos?userId=1"
-// curl -X POST -H "Content-Type":"application/json" localhost:8080/todo/1/update
+// curl -X GET -H "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFwb29ydm1pc2hyYTEwMTA5MkBnbWFpbC5jb20iLCJpYXQiOjE2MDc4MzY0Nzl9.e0K6kQCMWOt_lzcMEwktR5n_of2h7pvZ-_FZELchJ9A" "localhost:8080/todos?userId=1"
+// curl -X PATCH -H "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFwb29ydm1pc2hyYTEwMTA5MkBnbWFpbC5jb20iLCJpYXQiOjE2MDc4MzY0Nzl9.e0K6kQCMWOt_lzcMEwktR5n_of2h7pvZ-_FZELchJ9A" -H "Content-Type":"application/json" -d '{"done":"true"}' "localhost:8080/todo/1/update?userId=32"
 
 app.post('/signup',
   validate([
@@ -159,8 +159,11 @@ app.get('/todos', authorize, async (req, res, next) => {
   }
 });
 
-app.post('/todo/:id/update', (req, res) => {
-  res.json({ message: '/todo/:id/update success' });
+app.patch('/todo/:id/update', authorize, async (req, res) => {
+  const todoId = req.params.id;
+  const updateParams = {...req.body };
+  const updatedTodo = await Todo.update(updateParams, { where: { id: todoId }});
+  res.json({ message: 'Todo updated!' });
 });
 
 app.listen(port, () => {
