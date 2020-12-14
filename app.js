@@ -2,8 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const jwt = require('express-jwt');
-const jsonwebtoken = require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
 const app = express();
 const port = 8080;
 
@@ -37,10 +36,27 @@ const validate = validations => {
     res.status(400).json({ errors: errors.array() });
   }
 };
+const authorize = async(req, res, next) => {
+  if (!req.query.userId || !req.headers.authorization) {
+    return res.status(403).json({ message: 'Unauthorized!' });
+  }
+  if(req.headers.authorization.split(' ')[0] === 'Bearer') {
+    const decoded = jwt.verify(req.headers.authorization.split(' ')[1], process.env.JWT_SECRET);
+    if (!decoded.email) {
+      return res.status(403).json({ message: 'Unauthorized!' });
+    }
+    const user = await User.findOne({ where: { email: decoded.email }});
+    if (user.id === parseInt(req.query.userId)) {
+      // Authorized!
+      return next();
+    }
+  }
+  return res.status(403).json({ message: 'Unauthorized!' });
+};
 const generateJWT = async(req, res, next) => {
-  req.body.jwt = jsonwebtoken.sign({ email: req.body.email }, process.env.JWT_SECRET);
+  req.body.jwt = jwt.sign({ email: req.body.email }, process.env.JWT_SECRET);
   next();   
-}
+};
 // db
 const { Sequelize, DataTypes, Model } = require('sequelize');
 const sequelize = new Sequelize({
@@ -55,8 +71,6 @@ const { User, Todo } = require("./models/init-models")(sequelize);
 /* Routes required */
 // POST /signup (validation)
 // POST /login (validation)
-// POST /logout
-// GET /user/:id (auth)
 // POST /todo/create?userId=<userId> (auth)
 // GET /todos?userId=<userId> (auth)
 // POST /todo/:id/update?userId=<userId> (auth)
@@ -66,9 +80,9 @@ const { User, Todo } = require("./models/init-models")(sequelize);
 // curl -X POST -H "Content-Type":"application/json" localhost:8080/login -d '{"email":"foo.bar@example.com","password":"password"}'
 // curl -X GET localhost:8080/logout
 // curl -X GET localhost:8080/user/1
-// curl -X POST -H "Content-Type":"application/json" localhost:8080/todo/create -d '{"name":"Water"}'
-// curl -X GET "localhost:8080/todos?userId=1"
-// curl -X POST -H "Content-Type":"application/json" localhost:8080/todo/1/update
+// curl -X POST -H "Content-Type":"application/json" -H "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFwb29ydm1pc2hyYTEwMTA5MkBnbWFpbC5jb20iLCJpYXQiOjE2MDc4MzY0Nzl9.e0K6kQCMWOt_lzcMEwktR5n_of2h7pvZ-_FZELchJ9A" "localhost:8080/todo/create?userId=32" -d '{"name":"Water"}'
+// curl -X GET -H "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFwb29ydm1pc2hyYTEwMTA5MkBnbWFpbC5jb20iLCJpYXQiOjE2MDc4MzY0Nzl9.e0K6kQCMWOt_lzcMEwktR5n_of2h7pvZ-_FZELchJ9A" "localhost:8080/todos?userId=1"
+// curl -X PATCH -H "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFwb29ydm1pc2hyYTEwMTA5MkBnbWFpbC5jb20iLCJpYXQiOjE2MDc4MzY0Nzl9.e0K6kQCMWOt_lzcMEwktR5n_of2h7pvZ-_FZELchJ9A" -H "Content-Type":"application/json" -d '{"done":"true"}' "localhost:8080/todo/1/update?userId=32"
 
 app.post('/signup',
   validate([
@@ -78,23 +92,21 @@ app.post('/signup',
   generateJWT,
   async (req, res, next) => {
     let user = {...req.body };
-
-    console.log(user);
-
+    let newUser;
     try {
       const { hash, salt } = await hasher({ password: req.body.password });
       user.hash = hash;
       user.salt = salt;
-      await User.create(user);
+      newUser = await User.create(user);
     } catch(err) {
       return next(err);
     }
 
     res.json({
       message: "SignUp successful!",
-      token: user.jwt,
-      id: user.id,
-      name: user.firstName + ' ' + user.lastName
+      token: newUser.jwt,
+      id: newUser.id,
+      name: newUser.firstName
     });
   });
 
@@ -121,24 +133,37 @@ app.post('/login', validate([
   }
 });
 
-app.get('/logout', (req, res) => {
-  res.json({ message: '/logout success' });
+app.post('/todo/create', authorize, async (req, res, next) => {
+  const userId = parseInt(req.query.userId);
+  try {
+    const todo = await Todo.create({
+      userId: userId,
+      name: req.body.name,
+      done: false,
+    });
+    res.json({ message: 'Todo created!', todo: todo });
+  } catch(err) {
+    next(err);
+  }
 });
 
-app.get('/user/:id', (req, res) => {
-  res.json({ message: '/user/:id success' });
+app.get('/todos', authorize, async (req, res, next) => {
+  const userId = parseInt(req.query.userId);
+  try {
+    const user = await User.findOne({ where: { id: userId }});
+    const todos = await Todo.findAll({ where: { userId: userId }, order: [ [ 'created_at', 'DESC' ] ] });
+    res.json({ message: 'Todos!', user: user, todos: todos });
+  } catch(err) {
+    next(err);
+  }
 });
 
-app.post('/todo/create', (req, res) => {
-  res.json({ message: '/todo/create success'});
-});
-
-app.get('/todos', (req, res) => {
-  res.json({ message: '/todos success' });
-});
-
-app.post('/todo/:id/update', (req, res) => {
-  res.json({ message: '/todo/:id/update success' });
+app.patch('/todo/:id/update', authorize, async (req, res) => {
+  console.log(req.body);
+  const todoId = req.params.id;
+  const updateParams = {...req.body };
+  const updatedTodo = await Todo.update(updateParams, { where: { id: todoId }});
+  res.json({ message: 'Todo updated!' });
 });
 
 app.listen(port, () => {
