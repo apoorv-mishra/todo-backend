@@ -85,6 +85,8 @@ const generateJWT = async(req, res, next) => {
 // curl -X GET -H "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFwb29ydm1pc2hyYTEwMTA5MkBnbWFpbC5jb20iLCJpYXQiOjE2MDc4MzY0Nzl9.e0K6kQCMWOt_lzcMEwktR5n_of2h7pvZ-_FZELchJ9A" "localhost:8080/todos?userId=1"
 // curl -X PATCH -H "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFwb29ydm1pc2hyYTEwMTA5MkBnbWFpbC5jb20iLCJpYXQiOjE2MDc4MzY0Nzl9.e0K6kQCMWOt_lzcMEwktR5n_of2h7pvZ-_FZELchJ9A" -H "Content-Type":"application/json" -d '{"done":"true"}' "localhost:8080/todo/1/update?userId=32"
 
+app.get('/', (req, res) => res.send('Welcome!'));
+
 app.post('/signup',
   validate([
     body('email').isEmail(),
