@@ -18,7 +18,19 @@ const hasher = (passObj) => {
   });
 };
 
-// Middlewares
+/*** Database Setup ***/ 
+const { Sequelize, DataTypes, Model } = require('sequelize');
+const sequelize = new Sequelize({
+  dialect: 'postgres',
+  database: process.env.DB_NAME,
+  username: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  host: process.env.DB_HOST
+});
+const { User, Todo } = require("./models/init-models")(sequelize);
+
+
+/*** Middlewares ***/
 app.use(express.json());
 app.use(cors());
 const validate = validations => {
@@ -57,28 +69,17 @@ const generateJWT = async(req, res, next) => {
   req.body.jwt = jwt.sign({ email: req.body.email }, process.env.JWT_SECRET);
   next();   
 };
-// db
-const { Sequelize, DataTypes, Model } = require('sequelize');
-const sequelize = new Sequelize({
-  dialect: 'postgres',
-  database: process.env.DB_NAME,
-  username: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  host: process.env.DB_HOST
-});
-const { User, Todo } = require("./models/init-models")(sequelize);
 
-/* Routes required */
+/*** Routes required ***/
 // POST /signup (validation)
 // POST /login (validation)
 // POST /todo/create?userId=<userId> (auth)
 // GET /todos?userId=<userId> (auth)
 // POST /todo/:id/update?userId=<userId> (auth)
 
-/* Examples */
+/*** Examples ***/
 // curl -X POST localhost:8080/signup -H "Content-Type":"application/json" -d '{"firstName":"foo","lastName":"bar","email":"foo.bar@example.com","password":"password"}'
 // curl -X POST -H "Content-Type":"application/json" localhost:8080/login -d '{"email":"foo.bar@example.com","password":"password"}'
-// curl -X GET localhost:8080/logout
 // curl -X GET localhost:8080/user/1
 // curl -X POST -H "Content-Type":"application/json" -H "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFwb29ydm1pc2hyYTEwMTA5MkBnbWFpbC5jb20iLCJpYXQiOjE2MDc4MzY0Nzl9.e0K6kQCMWOt_lzcMEwktR5n_of2h7pvZ-_FZELchJ9A" "localhost:8080/todo/create?userId=32" -d '{"name":"Water"}'
 // curl -X GET -H "Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFwb29ydm1pc2hyYTEwMTA5MkBnbWFpbC5jb20iLCJpYXQiOjE2MDc4MzY0Nzl9.e0K6kQCMWOt_lzcMEwktR5n_of2h7pvZ-_FZELchJ9A" "localhost:8080/todos?userId=1"
@@ -159,7 +160,6 @@ app.get('/todos', authorize, async (req, res, next) => {
 });
 
 app.patch('/todo/:id/update', authorize, async (req, res) => {
-  console.log(req.body);
   const todoId = req.params.id;
   const updateParams = {...req.body };
   const updatedTodo = await Todo.update(updateParams, { where: { id: todoId }});
