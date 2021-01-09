@@ -136,7 +136,10 @@ app.post('/login', validate([
   }
 });
 
-app.post('/todo/create', authorize, async (req, res, next) => {
+app.post('/todo/create',
+  authorize,
+  validate([ body('name').isLength({ min: 1 }) ]),
+  async (req, res, next) => {
   const userId = parseInt(req.query.userId);
   try {
     const todo = await Todo.create({
